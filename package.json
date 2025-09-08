@@ -1,0 +1,40 @@
+{
+  "name": "visionlink",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VisionLink - A WebRTC Video Chat & Collaboration App",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "server": "nodemon server/index.js",
+    "client": "npm start --prefix client",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm run build --prefix client"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Adiprasad18/VisionLink.git"
+  },
+  "keywords": [
+    "webrtc",
+    "video-chat",
+    "socket.io",
+    "react",
+    "visionlink"
+  ],
+  "author": "Aditya Prasad",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Adiprasad18/VisionLink/issues"
+  },
+  "homepage": "https://github.com/Adiprasad18/VisionLink#readme",
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.8.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.0"
+  }
+}
