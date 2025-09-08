@@ -1,20 +1,41 @@
+const express = require("express");
+const path = require("path");
+const { createServer } = require("http");
 const { Server } = require("socket.io");
 
-// Initialize Socket.io server
+const app = express();
 const PORT = process.env.PORT || 8000;
-const io = new Server(PORT, {
+
+// Serve React frontend
+app.use(express.static(path.join(__dirname, "../client/build")));
+
+// API example route
+app.get("/api/test", (req, res) => {
+  res.json({ message: "API is working!" });
+});
+
+// All other routes serve React app
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/build", "index.html"));
+});
+
+// Create HTTP server for Socket.io
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+const io = new Server(httpServer, {
   cors: {
-    origin: "*", // optional, allows all origins in production
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
-
 
 // Maps to track connections
 const emailToSocketIdMap = new Map();
 const socketIdToEmailMap = new Map();
 const roomToPeersMap = new Map();
 
+// Socket.io events
 io.on("connection", (socket) => {
   console.log(`[SOCKET] Connected: ${socket.id}`);
 
@@ -27,7 +48,6 @@ io.on("connection", (socket) => {
     socket.data.room = room;
     socket.data.email = email;
 
-    // Add peer to room map
     if (!roomToPeersMap.has(room)) roomToPeersMap.set(room, new Map());
     roomToPeersMap.get(room).set(socket.id, email);
 
@@ -37,6 +57,7 @@ io.on("connection", (socket) => {
     const existingPeers = Array.from(roomToPeersMap.get(room))
       .filter(([id]) => id !== socket.id)
       .map(([id, peerEmail]) => ({ id, email: peerEmail }));
+
     socket.emit("room:peers", { peers: existingPeers });
 
     // Notify others in room
@@ -63,22 +84,17 @@ io.on("connection", (socket) => {
     }
   });
 
-  // ✅ Chat message (consistent with ChatBox.jsx)
+  // Chat messages
   socket.on("chatMessage", (msg) => {
     const room = socket.data?.room;
-    if (room) {
-      io.to(room).emit("chatMessage", msg);
-    } else {
-      io.emit("chatMessage", msg); // fallback (no room)
-    }
+    if (room) io.to(room).emit("chatMessage", msg);
+    else io.emit("chatMessage", msg);
   });
 
-  // ✅ Typing indicator
+  // Typing indicator
   socket.on("typing", (user) => {
     const room = socket.data?.room;
-    if (room) {
-      socket.to(room).emit("typing", user);
-    }
+    if (room) socket.to(room).emit("typing", user);
   });
 
   // Hangup
@@ -97,10 +113,12 @@ io.on("connection", (socket) => {
 
     console.log(`[SOCKET] Disconnected: ${socket.id} (${email})`);
 
-    // Remove from room
     if (room && roomToPeersMap.has(room)) {
       roomToPeersMap.get(room).delete(socket.id);
       socket.to(room).emit("call:hangup", { from: socket.id, email });
     }
   });
 });
+
+// Start server
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
