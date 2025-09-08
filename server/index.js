@@ -1,12 +1,14 @@
 const { Server } = require("socket.io");
 
 // Initialize Socket.io server
-const io = new Server(8000, {
+const PORT = process.env.PORT || 8000;
+const io = new Server(PORT, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "*", // optional, allows all origins in production
     methods: ["GET", "POST"],
   },
 });
+
 
 // Maps to track connections
 const emailToSocketIdMap = new Map();
